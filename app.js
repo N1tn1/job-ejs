@@ -40,10 +40,10 @@ app.use(require("connect-flash")());
 // secret word handling
 app.get("/secretWord", (req, res) => {
     if (!req.session.secretWord) {
-        req.session.secretWord = "syzygy";
+        req.session.secretWord = "syzygy"
     }
-    res.locals.info = req.flash("info");
-    res.locals.errors = req.flash("error");
+    res.locals.info = req.flash("info")
+    res.locals.errors = req.flash("error")
     res.render("secretWord", { secretWord: req.session.secretWord });
 });
 app.post("/secretWord", (req, res) => {
