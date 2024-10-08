@@ -54,11 +54,11 @@ app.post("/secretWord", (req, res) => {
         req.session.secretWord = req.body.secretWord;
         req.flash("info", "The secret word was changed.");
     }
-    res.redirect("/secretWord");
+    res.redirect("/secretWord")
 });
 
 app.use((req, res) => {
-    res.status(404).send(`That page (${req.url}) was not found.`);
+    res.status(404).send(`That page (${req.url}) was not found.`)
 });
 
 app.use((err, req, res, next) => {
