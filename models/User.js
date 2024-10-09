@@ -1,16 +1,12 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
-
-const jwtSecret = process.env.JWT_SECRET || 'default_secret'
-const jwtLifetime = process.env.JWT_LIFETIME || '1h'
 
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please provide name'],
-    maxlength: [50, 'Name cannot be more than 50 characters'],
-    minlength: [3, 'Name must be at least 3 characters long'],
+    maxlength: 50,
+    minlength: 3,
   },
   email: {
     type: String,
@@ -24,39 +20,24 @@ const UserSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Please provide password'],
-    minlength: [6, 'Password must be at least 6 characters long'],
+    minlength: 6,
   },
-}, { timestamps: true })
-
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next()
-  try {
-    const salt = await bcrypt.genSalt(10)
-    this.password = await bcrypt.hash(this.password, salt)
-    next()
-  } catch (error) {
-    next(error)
-  }
 })
 
-UserSchema.methods.createJWT = function () {
-  return jwt.sign(
-    { userId: this._id, name: this.name },
-    jwtSecret,
-    {
-      expiresIn: jwtLifetime,
-    }
-  )
-}
+UserSchema.pre('save', async function (next) {
+  try {
+    if (!this.isModified('password')) return next();
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error); 
+  }
+});
 
 UserSchema.methods.comparePassword = async function (canditatePassword) {
-  return  await bcrypt.compare(canditatePassword, this.password)
+  const isMatch = await bcrypt.compare(canditatePassword, this.password)
+  return isMatch
 }
-
-UserSchema.methods.toJSON = function () {
-  const user = this.toObject()
-  delete user.password
-  return user
-};
 
 module.exports = mongoose.model('User', UserSchema)
