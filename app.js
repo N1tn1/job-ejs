@@ -26,9 +26,12 @@ app.set("view engine", "ejs");
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const url = process.env.MONGO_URI;
+let mongoURL = process.env.MONGO_URI;
+if (process.env.NODE_ENV == "test") {
+  mongoURL = process.env.MONGO_URI_TEST;
+}
 const store = new MongoDBStore({
-    uri: url,
+    uri: mongoURL,
     collection: "mySessions",
 });
 
@@ -58,6 +61,15 @@ app.use((req, res, next) => {
     res.locals.csrfToken = csrfProtection.create(req.session.id);
     next();
 });
+
+app.use((req, res, next) => {
+    if (req.path == "/multiply") {
+      res.set("Content-Type", "application/json");
+    } else {
+      res.set("Content-Type", "text/html");
+    }
+    next();
+  });
 
 app.use((req, res, next) => {
     if (req.method === 'POST') {
@@ -97,6 +109,16 @@ const auth = require("./middleware/auth");
 app.use("/secretWord", auth, secretWordRouter);
 app.use("/jobs", auth, jobsRouter);
 
+app.get("/multiply", (req, res) => {
+    const result = req.query.first * req.query.second;
+    if (result.isNaN) {
+      result = "NaN";
+    } else if (result == null) {
+      result = "null";
+    }
+    res.json({ result: result });
+  });
+
 app.use((req, res) => {
     res.status(404).send(`That page (${req.url}) was not found.`);
 });
@@ -107,16 +129,17 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 3000;
-
-const start = async () => {
-    try {
-        await require("./db/connect")(process.env.MONGO_URI);
-        app.listen(port, () =>
-            console.log(`Server is listening on port ${port}...`)
-        );
-    } catch (error) {
-        console.error(error);
-    }
+const start = () => {
+  try {
+    require("./db/connect")(mongoURL);
+    return app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`),
+    );
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 start();
+
+module.exports = { app };
